@@ -1,0 +1,26 @@
+---
+title: "DataProductsWeek2Map"
+author: "KCS"
+date: "December 22, 2017"
+output:
+  ##ioslides_presentation: default
+  ##beamer_presentation: default
+  slidy_presentation: default
+---
+
+```{r, echo=FALSE}
+library(leaflet)
+library(magrittr)
+HerringRunPark<- c(
+  "<a href='https://maryland.hometownlocator.com/maps/feature-map,ftc,2,fid,597540,n,herring%20run%20park.cfm/'>Herring Run Park</a>"
+)
+
+datt<- data.frame(lat=	39.331489, lng=-76.576585) 
+datt %>%  
+  leaflet() %>%
+   addTiles() %>%
+  addMarkers(popup=HerringRunPark) %>%
+  addRectangles(lat1=39.33, lng1=-76.572,
+                lat2=39.3320, lng2=-76.580)
+```
+

@@ -1,0 +1,15 @@
+---
+title: "Plotly"
+author: "KCS"
+date: "December 27, 2017"
+output:
+  slidy_presentation: default
+  ioslides_presentation: default
+---
+
+```{r, echo= FALSE, message=FALSE}
+suppressPackageStartupMessages(library(plotly))
+plotlytest<- plot_ly(data= airquality, x= ~Wind, y= ~Temp, 
+                     mode="markers", color = ~Ozone, size = ~Solar.R)
+plotlytest
+```

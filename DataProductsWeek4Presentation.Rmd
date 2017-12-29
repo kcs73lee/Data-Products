@@ -1,0 +1,150 @@
+---
+title: "Ozone Prediction App"
+author: "KCS"
+date: "December 29, 2017"
+output: ioslides_presentation
+subtitle: Developing Data Products
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+##Objective
+This Application was developed using the airquality dataset to show the relationship between Solar Radiation and Ozone. 
+
+Using the ShinyApp, one may be able to predict Ozone using 3 predictive models.
+
+Link to ShinyApp: https://kcs73.shinyapps.io/myApp/
+
+
+*** 
+A brief look at the plot using one linear model
+```{r,echo=FALSE}
+  library(datasets)
+  model1<-lm(Ozone~Solar.R, airquality) 
+  
+  colcond<-ifelse(airquality$Solar.R<50,"blue", ifelse(airquality$Solar.R>50&airquality$Solar.R<100,"orange",ifelse(airquality$Solar.R>150,"red","red")))
+
+  plot(airquality$Solar.R,airquality$Ozone, xlab= "Solar Radiaton",
+         ylab="Ozone", bty="n", pch=4,
+         xlim=c(0,150), ylim=c(0, 60), col=colcond,
+  abline(model1,col="green",lwd=4))
+```
+
+***
+Code Overview from ui.R
+```{r,echo=TRUE,eval=FALSE}
+library(shiny)
+
+# Define UI for application that draws a histogram
+shinyUI(fluidPage(
+  
+  # Application title
+  titlePanel("Ozone Predicton by Solar Radiation"),
+  # Sidebar with a slider input for number of bins 
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("sliderSolar","Select Solar Radation Value to Obtain Predicted Ozone Value?", 0,150, value= 75),
+      
+      checkboxInput("showModel1","Prediction Test 1", value= TRUE),
+      
+      checkboxInput("showModel2","Prediction Test 2", value= TRUE),
+      
+      checkboxInput("showModel3","Prediction Test 3", value= TRUE)
+    ),
+    
+    # Show a plot of the generated distribution
+    mainPanel(
+      tabsetPanel(
+                  tabPanel("Plot",
+      plotOutput("plot1"),
+      h3("Predicted Ozone from Test 1:"),
+      textOutput("pred1"),
+      h3("Predicted Ozone from Test 2:"),
+      textOutput("pred2"),
+      h3("Predicted Ozone from Test 3:"),
+      textOutput("pred3")),
+      
+      tabPanel("Dataset",
+            h3("Airquality dataset was used to generate the plot"),
+              verbatimTextOutput("out4"))
+    ))
+)))
+
+
+```
+
+***
+Code Overview from server.R
+```{r,echo=TRUE, eval=FALSE}
+library(shiny)
+
+# Define server logic required to draw a histogram
+shinyServer(function(input, output) {
+  airquality$svar<- ifelse(airquality$Solar.R-100>0,airquality$Solar.R-100,0)
+  airquality$svar2<- ifelse(airquality$Solar.R-50>0,airquality$Solar.R-50,0)
+  model1<-lm(Ozone~Solar.R, airquality)  
+  model2<-lm(Ozone~svar+Solar.R, airquality) 
+  model3<-lm(Ozone~svar2+Solar.R, airquality) 
+  
+  model1pred<-reactive({
+    SolarInput<-input$sliderSolar
+    predict(model1, newdata= data.frame(Solar.R=SolarInput))
+  })
+  
+  model2pred<-reactive({
+    SolarInput<-input$sliderSolar
+    predict(model2, newdata= 
+              data.frame(Solar.R=SolarInput,
+                         svar=ifelse(SolarInput-100>0,
+                                     SolarInput-100,0)))
+ })
+  model3pred<-reactive({
+    SolarInput<-input$sliderSolar
+    predict(model3, newdata= 
+              data.frame(Solar.R=SolarInput,
+                         svar2=ifelse(SolarInput-50>0,
+                                     SolarInput-50,0)))
+  })
+  output$plot1<-renderPlot({
+    SolarInput<-input$sliderSolar
+    
+    plot(airquality$Solar.R,airquality$Ozone, xlab= "Solar Radiaton",
+         ylab="Ozone", bty="n", pch=4,
+         xlim=c(0,150), ylim=c(0, 60))
+    if(input$showModel1){
+      abline(model1, col= "green", lwd=4)
+    }
+    if(input$showModel2){
+      model2lines<-predict(model2, newdata=data.frame(
+        Solar.R=0:150, svar=ifelse(0:150-100>0,0:150-100,0)
+      ))
+      lines(0:150, model2lines,col="purple", lwd=4)
+    }
+    if(input$showModel3){
+      model3lines<-predict(model3, newdata=data.frame(
+        Solar.R=0:150, svar2=ifelse(0:150-50>0,0:150-50,0)
+      ))
+      lines(0:150, model3lines,col="orange", lwd=4)
+    }
+    legend(25,250,c("Model 1 Prediction", "Model 2 Predction","Model 3 Prediction"),pch=4,
+           col=c("green","purple","orange"),bty="n",cex=1.2)
+    points(SolarInput, model1pred(), col="green", pch=15, cex=2)
+    points(SolarInput, model2pred(), col="purple",pch=15, cex=2)
+    points(SolarInput, model3pred(), col="orange",pch=15, cex=2)
+  })
+  output$pred1<-renderText({
+    model1pred()
+  })
+  output$pred2<-renderText({
+    model2pred()
+  })
+  output$pred3<-renderText({
+    model3pred()
+  })
+  output$out4<-renderPrint({head
+  (airquality)
+  })
+})
+```
